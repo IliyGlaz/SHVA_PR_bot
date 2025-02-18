@@ -70,7 +70,7 @@ def send_photo(user_id, image_path, message):      ## функция отпра�
 def check_subscription(user_id, group_ids):  ##Сбор подписок юзера
     try:
         response = user_vk.users.getSubscriptions(user_id=user_id, extended=1)
-        groups = response['items']  # Все сообщества, включая группы и страницы
+        groups = response['items'] 
         subscribed_groups = [group['id'] for group in groups]
         return all(group_id in subscribed_groups for group_id in group_ids)
 
