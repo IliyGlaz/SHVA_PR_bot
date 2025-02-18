@@ -2,11 +2,10 @@ import json
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.upload import VkUpload
-from config import GROUP_TOKEN, USER_TOKEN  # GROUP_TOKEN - токен группы, USER_TOKEN - токен пользователя
+from config import GROUP_TOKEN, USER_TOKEN  
 
-# Создаем сессии для двух токенов
-group_vk_session = vk_api.VkApi(token=GROUP_TOKEN)  # Токен группы для отправки сообщений
-user_vk_session = vk_api.VkApi(token=USER_TOKEN)    # Токен пользователя для проверки подписки
+group_vk_session = vk_api.VkApi(token=GROUP_TOKEN)  
+user_vk_session = vk_api.VkApi(token=USER_TOKEN)    
 
 group_vk = group_vk_session.get_api()
 user_vk = user_vk_session.get_api()
@@ -20,7 +19,7 @@ def read_json_file(file_path):
 
 messages = read_json_file('messages.json')
 
-def create_keyboard(button_text, button_text_2):
+def create_keyboard(button_text, button_text_2): ## Основная клава
     keyboard = {
         "one_time": False,
         "buttons": [
@@ -32,7 +31,7 @@ def create_keyboard(button_text, button_text_2):
     }
     return json.dumps(keyboard, ensure_ascii=False)
 
-def create_keyboard_3():
+def create_keyboard_3(): ## Клава с 3 кнопками 
     keyboard = {
         "one_time": False,
         "buttons": [
@@ -45,7 +44,7 @@ def create_keyboard_3():
     }
     return json.dumps(keyboard, ensure_ascii=False)
 
-def send_message(user_id, message, keyboard=None):
+def send_message(user_id, message, keyboard=None):    ##отправка сообщений
     group_vk.messages.send(
         user_id=user_id,
         message=message,
@@ -53,7 +52,7 @@ def send_message(user_id, message, keyboard=None):
         keyboard=keyboard
     )
 
-def send_photo(user_id, image_path, message):
+def send_photo(user_id, image_path, message):      ## функция отправки картинок
     photo = upload.photo_messages(image_path)
     photo_id = photo[0]['id']
     photo_owner_id = photo[0]['owner_id']
@@ -68,10 +67,8 @@ def send_photo(user_id, image_path, message):
     )
 
 
-def check_subscription(user_id, group_ids):
-    """Проверяем подписки пользователя на все типы сообществ по их ID"""
+def check_subscription(user_id, group_ids):  ##Сбор подписок юзера
     try:
-        # Получаем список всех сообществ, на которые подписан пользователь
         response = user_vk.users.getSubscriptions(user_id=user_id, extended=1)
         groups = response['items']  # Все сообщества, включая группы и страницы
         subscribed_groups = [group['id'] for group in groups]
@@ -81,33 +78,29 @@ def check_subscription(user_id, group_ids):
         print(f"Error checking subscriptions: {e}")
         return False
 
-# Храним информацию о текущих пользователях и их статусах
 user_status = {}
 
-# Основной цикл прослушивания сообщений
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW:
-        if event.to_me:  # Обрабатываем только личные сообщения
+        if event.to_me:  
             user_id = event.user_id
             if user_id not in user_status:
-                user_status[user_id] = {'checked': False}  # Изначально у пользователя нет статуса
+                user_status[user_id] = {'checked': False}  
 
-            if event.text.lower() == "начать":
-                # IDs групп, на которые должен быть подписан пользователь
-                required_group_ids = [401713]  # Замените на реальные ID групп
+            if event.text.lower() == "начать": ## Проверяем подписку
+                required_group_ids = [401713]  
 
-                # Проверка подписки
-                if not user_status[user_id]['checked']:  # Если еще не проверено
+                
+                if not user_status[user_id]['checked']:  
                     if check_subscription(user_id, required_group_ids):
                         send_message(user_id, messages["начать"][0], create_keyboard_3())
-                        user_status[user_id]['checked'] = True  # Отметим, что подписка проверена
+                        user_status[user_id]['checked'] = True  
                     else:
                         send_message(user_id, "Пожалуйста, подпишись на нашу группу, чтобы продолжить.\n\nhttps://vk.com/atmosfera", '{"one_time": true, "buttons": []}')
                 else:
                     send_message(user_id, messages["начать"][0], create_keyboard_3())
 
             else:
-                # Далее продолжается обработка сообщений в зависимости от введенного текста
                 if event.text.lower() == "конец блока" or event.text.lower() == "закончить":
                     send_message(user_id, "Вы окончили путешествие. Если хотите возобновить его, напишите \"Начать\"", '{"one_time": true, "buttons": []}')
                     continue
